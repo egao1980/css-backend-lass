@@ -1,0 +1,5 @@
+;; :let* bindings are visible in included files; includes are relative to
+;; the including file.
+(:let* ((fg "#111")
+        (pad "4px"))
+  (:include "parts/base.lass"))

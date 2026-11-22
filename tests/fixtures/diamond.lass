@@ -1,0 +1,3 @@
+;; The same file twice is not a cycle.
+(:include "parts/nested/pad.lass")
+(:include "parts/nested/pad.lass")

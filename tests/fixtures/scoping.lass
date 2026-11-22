@@ -1,0 +1,3 @@
+(:let* ((fg "blue"))
+  (:include "parts/local.lass")
+  (b :color #(fg)))

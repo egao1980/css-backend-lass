@@ -1,0 +1,4 @@
+;; This file's own :let* does not leak into the including file.
+(:let* ((fg "red"))
+  (em :color #(fg)))
+(strong :color #(fg))

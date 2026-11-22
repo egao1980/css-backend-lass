@@ -1,0 +1,7 @@
+;;; Copied to a temporary directory as lass-sheet-fixture.asd by asdf-test.
+(defsystem "lass-sheet-fixture"
+  :defsystem-depends-on ("css-backend-lass")
+  :components ((:module "src"
+                :components ((:lass-stylesheet "sheet" :output "../css/sheet.css" :pretty t)
+                             (:lass-stylesheet "mini" :output "../css/mini.css")
+                             (:lass-stylesheet "plain")))))

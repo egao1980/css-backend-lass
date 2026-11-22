@@ -1,0 +1,2 @@
+;; Must not evaluate: files are read with *read-eval* nil.
+(a :color #.(progn (setf css-backend-lass/tests::*evaluated* t) "red"))
