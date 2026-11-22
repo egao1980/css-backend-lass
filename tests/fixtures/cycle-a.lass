@@ -1,0 +1,2 @@
+(a :color red)
+(:include "cycle-b.lass")

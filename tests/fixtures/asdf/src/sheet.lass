@@ -1,0 +1,3 @@
+(:let* ((accent "#007bff"))
+  (:include "part.lass")
+  (a :color (darken #(accent) 10%) :content "→"))

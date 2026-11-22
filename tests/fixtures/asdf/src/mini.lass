@@ -1,0 +1,2 @@
+(p :margin (* 2 "4px"))
+(:media print (p :margin 0))
