@@ -4,11 +4,18 @@
   :author "egao1980"
   :license "MIT"
   :depends-on ((:version "css-protocol" "0.1.0")
-               (:version "lass" "0.6.0"))
+               (:version "lass" "0.6.0")
+               (:version "encoding-protocol" "0.2.0"))
   :serial t
   :pathname "src"
   :components ((:file "package")
                (:file "conditions")
+               (:file "context")
+               (:file "numbers")
+               (:file "colour")
+               (:file "functions")
+               (:file "special")
+               (:file "walk")
                (:file "backend")
                (:file "asdf"))
   :in-order-to ((test-op (test-op "css-backend-lass/tests"))))

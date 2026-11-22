@@ -1,4 +1,4 @@
-;;;; Conditions. GIVEN (not stubs), except %CSS1-PENDING, the stub marker.
+;;;; Conditions.
 ;;;;
 ;;;; css-backend-lass has no error dialect of its own: everything it signals is
 ;;;; a css-protocol condition, and the three classes below are subclasses of
@@ -72,15 +72,3 @@
                      (mapcar #'file-namestring (lass-include-chain c)))))
   (:documentation "An :include of a file that is already being compiled."))
 
-;;; Contract stub marker. Every call site is replaced by the H4h-0b-1
-;;; implementation; nothing may call it when the slice is done.
-
-(define-condition css1-pending (error)
-  ((what :initarg :what :reader css1-pending-what))
-  (:report (lambda (c s)
-             (format s "H4h-0b-1 contract stub not implemented: ~S"
-                     (css1-pending-what c)))))
-
-(defun %css1-pending (what)
-  "Contract stub. Every call site is replaced by the H4h-0b-1 implementation."
-  (error 'css1-pending :what what))

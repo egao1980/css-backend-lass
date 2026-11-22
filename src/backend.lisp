@@ -1,5 +1,5 @@
-;;;; The LASS backend. Classes and variables GIVEN; functions and methods are
-;;;; STUBS (%CSS1-PENDING). The tests are the exact contract; this header is
+;;;; The LASS backend: the classes, the compile driver and the entry points.
+;;;; The tests are the exact contract; this header is
 ;;;; the summary.
 ;;;;
 ;;;; COMPILE PATH (locked by the brief)
@@ -97,18 +97,77 @@ CSS-PROTOCOL:*CSS-BACKEND* is."))
   "A LASS-SOURCE. VARIABLES is an alist as for COMPILE-LASS."
   (make-instance 'lass-source :forms forms :pathname pathname :variables variables))
 
+;;; Compile driver
+
+(defun %variable-key (name)
+  "A :VARIABLES key: a symbol as is, a string interned upcased in
+CSS-BACKEND-LASS-USER."
+  (if (stringp name)
+      (intern (string-upcase name) '#:css-backend-lass-user)
+      name))
+
+(defun %fresh-vars (variables)
+  "A fresh LASS variable table seeded from the VARIABLES alist (values
+LASS:RESOLVEd, in order, each seeing the earlier ones)."
+  (let ((table (make-hash-table)))
+    (let ((lass:*vars* table))
+      (loop for (name . value) in variables
+            do (setf (gethash (%variable-key name) table) (lass:resolve value))))
+    table))
+
+(defmacro with-backend-compile ((&key variables (base '*default-pathname-defaults*)
+                                   (stack ''()))
+                                &body body)
+  "Run BODY as a backend compile: the gate on, LASS:*VARS* a fresh table
+from VARIABLES (the global table is never read or written), the include
+base and stack bound."
+  `(let* ((*in-backend* t)
+          (*include-base* ,base)
+          (*include-stack* ,stack)
+          (lass:*vars* (%fresh-vars ,variables)))
+     ,@body))
+
+(defun %walk-forms (forms)
+  "Compile each top-level form on its own, then walk it into nodes."
+  (loop for form in forms
+        append (%walk-items (%compile-form form) :top t)))
+
+(defun %compile-forms (forms variables pathname)
+  (check-type forms list)
+  (with-backend-compile (:variables variables
+                         :base (or pathname *default-pathname-defaults*))
+    (css-protocol:make-stylesheet (%walk-forms forms))))
+
+(defun %compile-file (pathname variables)
+  (with-backend-compile (:variables variables)
+    (multiple-value-bind (forms file) (%read-lass-file pathname *default-pathname-defaults*)
+      (css-protocol:make-stylesheet
+       (when file
+         (let ((*include-base* file)
+               (*include-stack* (list file)))
+           (%walk-forms forms)))))))
+
 (defmethod css-protocol:backend-compile-stylesheet
     ((backend lass-backend) source &key variables pathname &allow-other-keys)
   "SOURCE: a list of LASS forms, a pathname (a LASS file) or a LASS-SOURCE.
 Anything else (strings included: LASS text is not parsed) is a TYPE-ERROR."
-  (declare (ignore source variables pathname))
-  (%css1-pending 'backend-compile-stylesheet))
+  (etypecase source
+    (list (%compile-forms source variables pathname))
+    (pathname (%compile-file source variables))
+    (lass-source
+     (let ((variables (or variables (lass-source-variables source)))
+           (pathname (or pathname (lass-source-pathname source))))
+       (if (or (lass-source-forms source) (null pathname))
+           (%compile-forms (lass-source-forms source) variables pathname)
+           (%compile-file pathname variables))))))
 
 (defmethod css-protocol:compile-stylesheet
-    ((source lass-source) &key backend &allow-other-keys)
+    ((source lass-source) &rest keys &key backend &allow-other-keys)
   "A LASS-SOURCE compiles with BACKEND, else *LASS-BACKEND*."
-  (declare (ignore backend))
-  (%css1-pending 'compile-stylesheet))
+  (apply #'css-protocol:backend-compile-stylesheet
+         (or backend *lass-backend*) source
+         (loop for (key value) on keys by #'cddr
+               unless (eq key :backend) nconc (list key value))))
 
 (defun compile-lass (forms &key variables pathname)
   "Compile the LASS top-level FORMS into a CSS-PROTOCOL:STYLESHEET.
@@ -116,12 +175,12 @@ VARIABLES: alist (name . value); a name is a symbol (matched EQ, as LASS
 does) or a string (interned upcased in CSS-BACKEND-LASS-USER); a value is
 LASS:RESOLVEd. PATHNAME: the file FORMS come from (the :include base).
 Same as (compile-stylesheet forms :backend *lass-backend* ...)."
-  (declare (ignore forms variables pathname))
-  (%css1-pending 'compile-lass))
+  (css-protocol:compile-stylesheet forms :backend *lass-backend*
+                                         :variables variables
+                                         :pathname pathname))
 
 (defun compile-lass-file (pathname &key variables)
   "Read the LASS file PATHNAME (CSS-BACKEND-LASS-USER, *READ-EVAL* NIL) and
 compile it. Includes are relative to it. A file that cannot be read signals
 LASS-FILE-ERROR."
-  (declare (ignore pathname variables))
-  (%css1-pending 'compile-lass-file))
+  (%compile-file pathname variables))

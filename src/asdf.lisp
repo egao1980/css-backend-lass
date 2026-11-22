@@ -1,5 +1,4 @@
-;;;; ASDF component :LASS-STYLESHEET. Class, initargs and OUTPUT-FILES GIVEN;
-;;;; PERFORM COMPILE-OP is a STUB.
+;;;; ASDF component :LASS-STYLESHEET.
 ;;;;
 ;;;;   (defsystem "engels"
 ;;;;     :defsystem-depends-on ("css-backend-lass")
@@ -43,4 +42,17 @@ the css-protocol model at COMPILE-OP."))
   t)
 
 (defmethod asdf:perform ((op asdf:compile-op) (c lass-stylesheet))
-  (%css1-pending 'lass-stylesheet-compile-op))
+  (let* ((output (first (asdf:output-files op c)))
+         (text (css-protocol:write-stylesheet
+                (compile-lass-file (asdf:component-pathname c))
+                :pretty (lass-stylesheet-pretty c)))
+         ;; #\Newline is LF in every Lisp string; writing octets keeps it LF
+         ;; (no OS newline translation) and the encoding UTF-8.
+         (octets (encoding-protocol:encode text :encoding :utf-8)))
+    (ensure-directories-exist output)
+    (with-open-file (out output :direction :output
+                                :element-type '(unsigned-byte 8)
+                                :if-exists :supersede
+                                :if-does-not-exist :create)
+      (write-sequence octets out))
+    output))
